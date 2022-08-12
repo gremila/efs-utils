@@ -478,6 +478,15 @@ role_arn = <role-arn-in-account-A>
 credential_source = Ec2InstanceMetadata
 ```
 
+## Use the assumed profile credentials for IAM and tag to retrieve teh efs file system id
+To authenticate with EFS using the system’s IAM identity of an awsprofile, add the `iam` option and pass the profile name to 
+`awsprofile` option. These options require the `tls` option.
+the option 'tag' allow to identify an efs file system from the tag. This option, allow to have a more friendly /etc/fstab, and in case or inter region disaster recovery, you can have 2 efs with the same tag, /etc/fstab can be the same in both region. In any case, the retrieval of the file-system-id is done only in the actual region. 
+
+```
+$ sudo mount -t efs -o tls,iam,awsprofile=test-profile,tag=Name <value of tag Name of the file-system-id> efs-mount-point/
+```
+
 
 ## License Summary
 
