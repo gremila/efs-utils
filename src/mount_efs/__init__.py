@@ -220,6 +220,7 @@ EFS_ONLY_OPTIONS = [
     "accesspoint",
     "awscredsuri",
     "awsprofile",
+    "tag",
     "az",
     "cafile",
     "iam",
@@ -2700,6 +2701,40 @@ def match_device(config, device, options):
     except ValueError:
         remote = device
         path = "/"
+
+    efs_client = get_botocore_client(config, "efs", options)
+    if "tag" in options:
+        tag = options["tag"]
+        if tag != "None":
+            found = 0
+            efs = efs_client.describe_file_systems()
+            for fs in efs["FileSystems"]:
+                for fs_tag in fs["Tags"]:
+                    if fs_tag["Key"] == tag:
+                        if fs_tag["Value"] == remote:
+                            ret_fs = fs["FileSystemId"]
+                            found = found + 1
+            while "NextMarker" in efs:
+                efs = efs_client.describe_file_systems(Marker=efs["NextMarker"])
+                for fs in efs["FileSystems"]:
+                    for fs_tag in fs["Tags"]:
+                        if fs_tag["Key"] == tag:
+                            if fs_tag["Value"] == remote:
+                                ret_fs = fs["FileSystemId"]
+                                found = found + 1
+            if found == 0:
+                fatal_error("No EFS found for tag %s, value %s." % 
+                ( tag,
+                remote)
+                )
+                #raise FallbackException(fallback_message)
+            if found > 1:
+                fatal_error("More than one EFS for tag %s, value %s." % 
+                ( tag,
+                remote)
+                )
+                #raise FallbackException(fallback_message)
+            remote = ret_fs
 
     if FS_ID_RE.match(remote):
         return remote, path, None
